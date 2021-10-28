@@ -1,0 +1,65 @@
+---
+- hosts: all
+  become: yes
+  name: Install and Configure Avi
+  gather_facts: no
+
+  tasks:
+    - name: upgrade all packages
+      yum: name=* state=latest
+
+    - name: Install pre-requisite packages
+      yum:
+        name: "{{item}}"
+        state: latest
+      loop:
+       - yum-utils
+       - open-vm-tools
+       - device-mapper-persistent-data
+       - lvm2
+       - ntp
+       - cloud-utils-growpart
+
+    - name: Add Docker CE repo
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install Docker
+      yum: name=docker state=latest
+
+    - name: Start and enable the Docker daemon
+      service: name=docker state=started enabled=yes
+
+    - name: Stop and disable firewalld.
+      service:
+        name: firewalld
+        state: stopped
+        enabled: False
+
+    - name: Copy Avi tar file over to the vm
+      ansible.builtin.copy:
+        src: /home/matt/avi/avi-21.1.2.tar.gz
+        dest: /tmp/avi-21.1.2.tar.gz
+
+    - name: Create Avi dir
+      file:
+        path: /tmp/avi
+        state: directory
+
+    - name: Untar Avi lsc file
+      ansible.builtin.unarchive:
+        src: /tmp/avi-21.1.2.tar.gz
+        dest: /tmp/avi
+        remote_src: yes
+
+    - name: Deploy the Avi Controller
+      command: "chdir=/tmp/avi sudo python /tmp/avi/avi_baremetal_setup.py --run_controller --con_cores {{ avi_controller_cpu }} --con_memory_gb {{ avi_controller_memory }} --controller_ip {{ avi_controller_ip }} --con_disk_gb {{ avi_controller_disk }}"
+
+    - name: Pause until Avi Controller is reachable
+      wait_for:
+        port: 443
+        host: '{{ avi_controller_ip }}'
+        search_regex: "Avi Vantage Controller"
+        delay: 600
+        timeout: 18000
