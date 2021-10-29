@@ -84,7 +84,7 @@ resource "vsphere_virtual_machine" "avi_controllers" {
   # }
 
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook avi-install.yml -u root -i '${self.default_ip_address},' -e ansible_user=root -e 'ansible_ssh_pass=${var.root_pass}' -e 'avi_controller_cpu=${var.avi_controller_cpu}' -e 'avi_controller_memory=${var.avi_controller_memory}' -e 'avi_controller_disk=${var.avi_controller_disk}' -e 'avi_controller_ip=${self.default_ip_address}' > ansible-playbook.log 2> ansible-error.log"
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook avi-install.yml -u root -i '${self.default_ip_address},' -e ansible_user=root -e 'ansible_ssh_pass=${var.root_pass}' -e 'avi_controller_cpu=${var.avi_controller_cpu}' -e 'avi_controller_memory=${var.avi_controller_memory}' -e 'avi_controller_disk=${var.avi_controller_disk}' -e 'avi_controller_ip=${self.default_ip_address}' -e 'location_avi_tar=${var.location_avi_tar}'> ansible-playbook.log 2> ansible-error.log"
   }
 
  }

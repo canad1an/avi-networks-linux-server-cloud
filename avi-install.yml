@@ -18,7 +18,6 @@
        - device-mapper-persistent-data
        - lvm2
        - ntp
-       - cloud-utils-growpart
 
     - name: Add Docker CE repo
       get_url:
@@ -37,9 +36,14 @@
         state: stopped
         enabled: False
 
+    - name: Restart docker to flush ip tables
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+        
     - name: Copy Avi tar file over to the vm
       ansible.builtin.copy:
-        src: /home/matt/avi/avi-21.1.2.tar.gz
+        src: '{{ location_avi_tar }}'
         dest: /tmp/avi-21.1.2.tar.gz
 
     - name: Create Avi dir
@@ -57,9 +61,12 @@
       command: "chdir=/tmp/avi sudo python /tmp/avi/avi_baremetal_setup.py --run_controller --con_cores {{ avi_controller_cpu }} --con_memory_gb {{ avi_controller_memory }} --controller_ip {{ avi_controller_ip }} --con_disk_gb {{ avi_controller_disk }}"
 
     - name: Pause until Avi Controller is reachable
-      wait_for:
-        port: 443
-        host: '{{ avi_controller_ip }}'
-        search_regex: "Avi Vantage Controller"
-        delay: 600
-        timeout: 18000
+      uri:
+        url: "https://{{ ansible_ssh_host }}"
+        method: GET
+        validate_certs: false
+        return_content: yes
+      register: result
+      until: "'avi-welcome' in result.content"
+      retries: 720 # 720 * 5 seconds = 1hour (60*60/5)
+      delay: 5 # Every 5 seconds

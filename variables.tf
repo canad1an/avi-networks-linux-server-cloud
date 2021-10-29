@@ -62,7 +62,7 @@ variable "cpu" {
   default     = 8
 }
 variable "root_pass" {
-  description = "The vCPUs for the vms"
+  description = "Root password for the VMs (From the template)"
   type        = string
   default     = "password"
 }
@@ -87,4 +87,9 @@ variable "avi_controller_disk" {
   description = "Avi controller allocated Disk space in GB"
   type        = number
   default     = 20
+}
+variable "location_avi_tar" {
+  description = "Location of the avi image tar file"
+  type        = string
+  default     = "/home/avi/avi-21.1.2.tar.gz"
 }
